@@ -1,0 +1,182 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>draw </title>
+    <link rel="stylesheet" href="../index.css">
+    <style>
+        #mainCanvas {
+            border: solid 1px black;
+            cursor: pointer;
+            background-color: white;
+            margin-left: 14%;
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+        body {
+            margin: 0;
+            background-color: #d8d5d5;
+        }
+        #selectedBox {
+            border: solid 1px black;
+        }
+    </style>
+</head>
+<body>
+
+ <canvas id="mainCanvas" width="1000px" height="1000px"></canvas>
+
+
+ <!-- The core Firebase JS SDK is always required and must be listed first -->
+ <script src="https://www.gstatic.com/firebasejs/8.9.1/firebase-app.js"></script>
+
+
+ <!-- TODO: Add SDKs for Firebase products that you want to use
+      https://firebase.google.com/docs/web/setup#available-libraries -->
+
+      <!-- Firestore -->
+ <script src="https://www.gstatic.com/firebasejs/7.16.1/firebase-firestore.js"></script>
+
+
+
+ <script>
+     //initializing the canvas and the context
+     let CANVAS = document.getElementById("mainCanvas");
+     var c = CANVAS.getContext("2d");
+     //Declaring variables
+     let DIMENSION = 10;
+     let PIXELSIZE = 40;
+     //changing the stroke style
+     c.strokeStyle = 'rgba(0,0,0,0.3)';
+     //the for loop tp draw the grid
+     for (let i = 0; i < DIMENSION; i++)
+     {
+         //Horizontally
+         y = (i * 1000) / DIMENSION;
+         c.beginPath();
+         c.moveTo(0,y);
+        c.lineTo(1000,y);
+        c.stroke();
+         //Vertically
+         x = (i * 1000) / DIMENSION;
+         c.beginPath();
+         c.moveTo(x,0);
+        c.lineTo(x,1000);
+         //apply stroke
+         c.stroke();
+     }
+     //the click event for the canvas pixels to go to the draw page
+     CANVAS.addEventListener("click",function (e) {
+         let offsetx = e.offsetX;
+         let offsety = e.offsetY;
+         //finding the corresponding pixel for the offsets
+         pixel = [Math.floor(offsetx/100),Math.floor(offsety/100)];
+         c.fillStyle = "rgba(0,50,100,0.25)";
+         c.fillRect(pixel[0] * 100 ,pixel[1] * 100, 100, 100);
+         //passing the selected pixel coordinates to the draw page
+         var params = new URLSearchParams();
+         params.append("x",pixel[0].toString());
+         params.append("y",pixel[1].toString());
+         var url = "draw.html?" + params.toString();
+         window.location.href = url;
+         //let querystring = "?x=" + pixel[0] + "&y=" + pixel[1];
+         //window.location.href  = "draw.html" + querystring;
+     })
+
+     //CANVAS.addEventListener("mousemove", function (e) {
+     //  let ooffsetx = e.offsetX;
+     //let ooffsety = e.offsetY;
+     //finding the corresponding pixel for the offsets
+     //pixel = [Math.floor(ooffsetx/100),Math.floor(ooffsety/100)];
+     // c.fillStyle = "rgba(0,50,100,0.25)";
+     // c.fillRect(pixel[0] * 100 ,pixel[1] * 100, 100, 100);
+     //setTimeout(function (){c.clearRect(pixel[0] * 100 ,pixel[1] * 100, 100, 100)},1000);
+     //})
+
+     // Initialize Cloud Firestore through Firebase
+
+     // Your web app's Firebase configuration
+     var firebaseConfig = {
+         apiKey: "AIzaSyCG7sIp2B8UKlAOax9gj6c3j4FS2W3q01k",
+         authDomain: "multiplayerdraw.firebaseapp.com",
+         projectId: "multiplayerdraw",
+         storageBucket: "multiplayerdraw.appspot.com",
+         messagingSenderId: "564529151780",
+         appId: "1:564529151780:web:4a12f6acb6944e465f7db1"
+     };
+     // Initialize Firebase
+     firebase.initializeApp(firebaseConfig);
+
+
+
+
+
+     let db = firebase.firestore();
+
+     var gridRef = db.collection("app").doc("grid");
+         
+     
+
+     gridRef.get().then( (doc) => {
+
+         if (doc.exists) {
+             //console.log("Document data:", doc.data());
+             //get the data
+             var Data = doc.data();
+             //console.log(Data);
+             //the first loop
+             for (let key in Data) {
+                 let coord = key.split(",");
+                 let json = Data[key];
+                 let pixelData = JSON.parse(json);
+                 //the second loop
+                 for (let subkey in pixelData) {
+                     let subcoord = subkey.split(",");
+                     let color = pixelData[subcoord];
+                     //console.log(coord,subcoord, color);
+                     fillPixel(coord,subcoord,color);
+
+                 }
+
+
+             }
+
+         } else {
+             // doc.data() will be undefined in this case
+             console.log("No such document!");
+         }
+
+     } ).catch( (error) => {
+         console.log("Error getting document:", error);
+     } );
+
+
+
+     //fillpixel function
+     function fillPixel(coord, subcoord, color) {
+         let coordX = parseInt(coord[0]);
+         let coordY = parseInt(coord[1]);
+         let subCoordX = parseInt(subcoord[0]);
+         let subCoordY = parseInt(subcoord[1]);
+
+
+         var PIXELSIZE = 6;
+
+         c.fillStyle = color;
+         let x = (coordX * DIMENSION + subCoordX) * PIXELSIZE;
+         let y = (coordY * DIMENSION + subCoordY) * PIXELSIZE;
+
+         c.fillRect(((subCoordX*40) / 10) + 100*coordX,((subCoordY*40) / 10) + 100*coordY,PIXELSIZE,PIXELSIZE);
+
+     }
+
+
+ </script>
+
+
+</body>
+</html>

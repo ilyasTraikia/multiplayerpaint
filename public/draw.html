@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>draw</title>
+    <link rel="stylesheet" href="../draw.css">
+    <style>
+        .mainDiv {
+            display: block;
+        }
+        .btnSave {
+            background-color: #0f72e2; /* Green */
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            -webkit-transition-duration: 0.4s; /* Safari */
+            transition-duration: 0.4s;
+        }
+        .btnSave:hover {
+            box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);
+        }
+    </style>
+    <!-- The core Firebase JS SDK is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/8.9.1/firebase-app.js"></script>
+
+    <!-- TODO: Add SDKs for Firebase products that you want to use
+         https://firebase.google.com/docs/web/setup#available-libraries -->
+    <script src="https://www.gstatic.com/firebasejs/8.9.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.9.1/firebase-firestore.js"></script>
+
+</head>
+<body>
+<script>
+ 
+     // Your web app's Firebase configuration
+     var firebaseConfig = {
+            apiKey: "AIzaSyCG7sIp2B8UKlAOax9gj6c3j4FS2W3q01k",
+            authDomain: "multiplayerdraw.firebaseapp.com",
+            projectId: "multiplayerdraw",
+            storageBucket: "multiplayerdraw.appspot.com",
+            messagingSenderId: "564529151780",
+            appId: "1:564529151780:web:4a12f6acb6944e465f7db1"
+        };
+        //Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        let db = firebase.firestore();
+
+   function ShowDrawing(X,Y) {
+            db.collection("app").doc("grid").get().then( (doc) => {
+            if (doc.exists) {
+              //console.log("Document data:", doc.data());
+               //get the data
+               var Data = doc.data();
+               //console.log(Data);
+                //the first loop
+               for (let key in Data) {
+               let coord = key.split(",");
+               let COORDX = parseInt(coord[0]);
+               let COORDY = parseInt(coord[1]);
+               if(COORDX == X & COORDY == Y){
+               let json = Data[key];
+                 let pixelData = JSON.parse(json);
+                //the second loop
+             for (let subkey in pixelData) {
+            let subcoord = subkey.split(",");
+           // console.log(subcoord);
+            let color = pixelData[subcoord];
+           // console.log(color);
+            c.fillStyle = color;
+            c.fillRect(parseInt(subcoord[0]) * 20,parseInt(subcoord[1]) * 20,20,20);
+
+            let key = parseInt(subcoord[0]) + ',' + parseInt(subcoord[1]);
+            FILLED[key] = color;
+            data['pixel'] = parseInt(subcoord[0]) + ',' + parseInt(subcoord[1]);
+
+             }
+
+            }
+    }
+} else {
+    // doc.data() will be undefined in this case
+    console.log("No such document!");
+}
+} ).catch( (error) => {
+console.log("Error getting document:", error);
+} );
+        }
+
+
+    var params = new URLSearchParams(window.location.search);
+
+        let x1 = parseInt(params.get("x"));
+        let y1 = parseInt(params.get("y"));
+        ShowDrawing(x1,y1);
+        //console.log(x1,y1)
+
+
+
+</script>
+Select your color : <input type="color" id="myColor" value="#000000" >
+<Button>Eraser</Button>
+<div class="mainDiv">
+<canvas id="myCanvas" height="500px" width="500px" style="border: solid 1px black; margin-left:400px;margin-top: 50px"></canvas>
+<input type="submit" class="btnSave" value="Save" onclick="save(x1,y1)"/>
+</div>
+
+<script>
+    //initializing the canvas and the context and the color picker
+    let canvas = document.getElementById("myCanvas");
+    var c = canvas.getContext("2d");
+    var colorPicker = document.getElementById("myColor");
+    //changing the stroke style
+    c.strokeStyle = 'rgba(0,0,0,0.1)';
+    //variables declaring
+    let DIMENSION = 25;
+    let PIXELSIZE = 20;
+    let PICKEDCOLOR = colorPicker.value;
+    let isDrawing = false;
+
+
+    var data =  {};
+    var FILLED = {};
+
+    //adding the event listener for the color change
+    colorPicker.addEventListener("change",function (e) {
+        PICKEDCOLOR = e.target.value;
+    })
+    //the for loop to draw all the grid
+    for (let i = 0; i < DIMENSION; i++)
+    {
+        //Horizontally
+        y = (i * 500) / DIMENSION;
+        c.beginPath();
+        c.moveTo(0,y);
+        c.lineTo(500,y);
+        c.stroke();
+        //Vertically
+        x = (i * 500) / DIMENSION;
+        c.beginPath();
+        c.moveTo(x,0);
+        c.lineTo(x,500);
+       // apply stroke
+        c.stroke();
+    }
+    //creating a function for filling the canvas grid
+    function mouseFill(e) {
+       if(isDrawing) {
+        let offsetX = e.offsetX;
+        let offsetY = e.offsetY;
+
+        //console.log(offsetX);
+        //console.log(offsetY);
+
+        if(offsetX < 0 || offsetY < 0 || offsetX <= -1 || offsetY <= -1){
+            return;
+        }
+        
+        //checking if the user clicked the mouse or not
+        if (e.button != 0) return;
+        //finding the corresponding pixel for the offsets
+        pixel = [Math.floor(offsetX/20),Math.floor(offsetY/20)];
+        //console log for testing
+        //console.log(pixel[0] + " " +pixel[1]);
+       
+        //filling the pixel
+        c.fillStyle = PICKEDCOLOR;
+        if(PICKEDCOLOR == "#ffffff")
+         {
+            c.fillRect(pixel[0] * PIXELSIZE, pixel[1] * PIXELSIZE, 20, 20);
+            console.log(pixel[0],pixel[1]);
+             
+            c.strokeStyle = 'rgba(0,0,0,0.1)';
+
+            c.beginPath();
+            c.moveTo(pixel[0]* PIXELSIZE,pixel[1]* PIXELSIZE);
+            c.lineTo(pixel[0]* PIXELSIZE,(pixel[1]+1)* PIXELSIZE);
+            c.stroke();
+
+            c.beginPath();
+            c.moveTo(pixel[0]* PIXELSIZE,pixel[1]* PIXELSIZE);
+            c.lineTo((pixel[0]+1)* PIXELSIZE,pixel[1]* PIXELSIZE);
+            c.stroke();
+
+            c.beginPath();
+            c.moveTo(pixel[0]* PIXELSIZE,(pixel[1]+1)* PIXELSIZE);
+            c.lineTo((pixel[0]+1)* PIXELSIZE,(pixel[1]+1)* PIXELSIZE);
+            c.stroke();
+
+            c.beginPath();
+            c.moveTo((pixel[0]+1)* PIXELSIZE,pixel[1]* PIXELSIZE);
+            c.lineTo((pixel[0]+1)* PIXELSIZE,(pixel[1]+1)* PIXELSIZE);
+            c.stroke();
+           
+         }
+        c.fillRect(pixel[0] * PIXELSIZE, pixel[1] * PIXELSIZE, 20, 20);
+        let key = pixel[0] + ',' + pixel[1];
+        FILLED[key] = PICKEDCOLOR;
+        data['pixel'] = pixel[0] + ',' + pixel[1];
+        
+        
+        
+    }
+
+    }
+    //adding an event listener to the canvas when the user clicks with his mouse
+     canvas.addEventListener("mousedown", e => {
+  isDrawing = true;});
+
+    canvas.addEventListener("mousemove",mouseFill);
+    canvas.addEventListener("mouseup",e => {
+    isDrawing = false;});
+  
+    //redirect function
+    function Redirect() {
+        window.location = "index.html";
+    }
+    //the save function to send data to firestore
+    window.save = function (x,y) {
+        console.log(x + " " + y);
+
+        data['x'] = x;
+        data['y'] = y;
+        data['data'] = FILLED;
+
+        let key = data['x'] + ',' + data['y'];
+        let Data =  data['data'];
+
+
+
+
+
+       
+
+      
+
+        let json = JSON.stringify(Data);
+        console.log(json);
+
+        let obj = {}
+        obj[key] = json
+
+            if(db.collection("app").doc("grid").update(obj)) {
+                setTimeout(function () {
+                    window.location = "index.html";
+                },1000)
+            }
+
+
+
+    }
+</script>
+
+
+</body>
+</html>
